@@ -12,6 +12,12 @@ require 'mini_magick'
 class AudioPlot
   class << self
     attr_accessor :ffmpeg
+
+    def magick?
+      MiniMagick.cli
+    rescue MiniMagick::Error
+      false
+    end
   end
   self.ffmpeg = `which ffmpeg`.chomp
 
@@ -19,7 +25,7 @@ class AudioPlot
 
   def initialize(source, opts = {})
     @defaults = { start: 5, length: 10, width: 1280, height: 720,
-                  color: '#44db97', bgcolor: 'transparent' }.merge(opts)
+                  color: '#44db97', bg: self.class.magick?, bgcolor: 'transparent' }.merge(opts)
     @source = source
   end
 
@@ -30,7 +36,8 @@ class AudioPlot
 
   def run(opts = {})
     verify_commands!
-    bg = run_magick(opts)
+    opts = @defaults.merge(opts)
+    bg = opts[:bg] && self.class.magick? ? run_magick(opts) : nil
     out, err, status = Open3.capture3(ffmpeg_cmd(opts), binmode: true, stdin_data: bg)
     raise err.chomp unless status.success?
     out
@@ -44,13 +51,12 @@ class AudioPlot
 
   # rubocop:disable Metrics/AbcSize
   def magick_cmd(opts = {})
-    opts = @defaults.merge(opts)
     convert = MiniMagick::Tool::Convert.new
     convert.size(opts.values_at(:width, :height).join('x'))
     convert << 'canvas:none'
-    convert.stroke("'#{opts[:color]}'")
+    convert.stroke(%('#{opts[:color]}'))
+    convert.fill(%('#{opts[:bgcolor]}'))
     convert.draw(%('rectangle 0,0 #{opts[:width]},#{opts[:height]}'))
-    convert.fill(opts[:bgcolor])
     background_pattern.each do |line|
       pos = ((opts[:height] / 2) * line).round
       convert.draw(%('line 0,#{pos} 1280,#{pos}'))
@@ -61,13 +67,21 @@ class AudioPlot
   end
 
   def ffmpeg_cmd(opts = {})
-    opts = @defaults.merge(opts)
-    cmd = %(#{self.class.ffmpeg} -i "#{@source}" -i - )
+    cmd = %(#{self.class.ffmpeg} -i "#{@source}" )
+    bg_source = if opts[:bg] && self.class.magick?
+      %(-i - )
+    elsif opts[:bgcolor] != 'transparent'
+      %(-f lavfi -i "color=s=#{opts[:width]}x#{opts[:height]}:c=#{opts[:bgcolor]}" )
+    else
+      nil
+    end
+
+    cmd << bg_source.to_s
     cmd << %(-filter_complex )
     cmd << %("[0:a]atrim=start=#{opts[:start]}:end=#{opts[:start] + opts[:length]},)
-    cmd << %(asetpts=PTS-STARTPTS,showwavespic=s=#{opts[:width]}x#{opts[:height]}:colors=#{opts[:color]}[fg],)
-    cmd << %([1:v][fg]overlay=y=0" )
-    cmd << %(-frames:v 1 -f image2pipe -c png -)
+    cmd << %(asetpts=PTS-STARTPTS,showwavespic=s=#{opts[:width]}x#{opts[:height]}:colors=#{opts[:color]})
+    cmd << %([fg],[1:v][fg]overlay=y=0) unless bg_source.nil?
+    cmd << %(" -frames:v 1 -f image2pipe -c png -)
     cmd
   end
   # rubocop:enable Metrics/AbcSize
