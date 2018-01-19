@@ -10,10 +10,6 @@ require 'mini_magick'
 #   File.open('waveform.png','wb') { |file| file.write(ap.run) }
 #
 class AudioPlot
-  LINES = [2.0 / 9, 5.0 / 12, 7.0 / 12, 13.0 / 18, 5.0 / 6, 11.0 / 12,
-           35.0 / 36, 1.0, 16.0 / 9, 19.0 / 12, 17.0 / 12, 23.0 / 18,
-           7.0 / 6, 13.0 / 12, 37.0 / 36].freeze
-
   class << self
     attr_accessor :ffmpeg
 
@@ -46,6 +42,10 @@ class AudioPlot
 
   private
 
+  def background_pattern
+    [8, 15, 21, 26, 30, 33, 35, 36, 37, 39, 42, 46, 51, 57, 64].map { |l| l.to_f / 36 }
+  end
+
   # rubocop:disable Metrics/AbcSize
   def magick_cmd(opts = {})
     opts = @defaults.merge(opts)
@@ -55,7 +55,7 @@ class AudioPlot
     convert.stroke("'#{opts[:color]}'")
     convert.draw(%('rectangle 0,0 #{opts[:width]},#{opts[:height]}'))
     convert.fill(opts[:bgcolor])
-    LINES.each do |line|
+    background_pattern.each do |line|
       pos = ((opts[:height] / 2) * line).round
       convert.draw(%('line 0,#{pos} 1280,#{pos}'))
     end
