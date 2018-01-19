@@ -24,16 +24,16 @@ class AudioPlot
   end
 
   def run_magick(opts = {})
-    o, _e, _s = Open3.capture3(magick_cmd(opts), binmode: true)
-    o
+    out, _err, _status = Open3.capture3(magick_cmd(opts), binmode: true)
+    out
   end
 
   def run(opts = {})
     verify_commands!
     bg = run_magick(opts)
-    o, e, s = Open3.capture3(ffmpeg_cmd(opts), binmode: true, stdin_data: bg)
-    raise e.chomp unless s.success?
-    o
+    out, err, status = Open3.capture3(ffmpeg_cmd(opts), binmode: true, stdin_data: bg)
+    raise err.chomp unless status.success?
+    out
   end
 
   private
