@@ -12,12 +12,8 @@ require 'mini_magick'
 class AudioPlot
   class << self
     attr_accessor :ffmpeg
-
-    def find_ffmpeg
-      `which ffmpeg`.chomp
-    end
   end
-  self.ffmpeg = find_ffmpeg
+  self.ffmpeg = `which ffmpeg`.chomp
 
   attr_reader :defaults
 
