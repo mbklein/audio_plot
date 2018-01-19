@@ -1,8 +1,9 @@
 # AudioPlot
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/audio_plot`. To experiment with that code, run `bin/console` for an interactive prompt.
+## Purpose
 
-TODO: Delete this and the text above, and describe your gem
+Generate waveform plots of audio data using [ffmpeg](http://ffmpeg.org/) and
+(optionally) [ImageMagick](http://www.imagemagick.org/)/[GraphicsMagick](http://www.graphicsmagick.org/)
 
 ## Installation
 
@@ -22,7 +23,19 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+    ap = AudioPlot.new('/path/to/audio/file')
+    image_data = ap.run
+    File.open('waveform.png','wb') { |f| f.write(image_data) }
+
+Both `AudioPlot.new` and `AudioPlot#run` take a number of optional parameters:
+
+* `start` - The start time (in seconds) from which to generate the plot (default: `5`)
+* `length` - The length (in seconds) of the plot (default: `10`)
+* `width` - The width (in pixels) of the plot (default: `1280`)
+* `height` - The height (in pixels) of the plot (default: `720`)
+* `color` - The color of the waveform and gridlines (default: `#44db97`)
+* `bg` - Whether to generate to a background grid behind thhe plot (default: `true` if ImageMagick or GraphicsMagick is installed)
+* `bgcolor` - The background color for the plot (default: `transparent`)
 
 ## Development
 
@@ -36,4 +49,4 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/[USERN
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+The gem is available as open source under the terms of the [Apache 2 License](https://opensource.org/licenses/Apache-2.0).
